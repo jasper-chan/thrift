@@ -31,6 +31,7 @@ compiler:
   - gcc
 
 before_install:
+    add sudo
   - sh build/travis/installCXXDependencies.sh
   - if [ "$ALL_DEPS" != "no" ] ; then sh build/travis/installDependencies.sh 1> /dev/null ; fi
   - if [ "$ALL_DEPS" != "no" ] ; then export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/1.20/bin:$PATH ; fi
@@ -44,6 +45,9 @@ script:
   - if [ "x$CONFIG" != "xnone" ] ; then sh configure $CONFIG ; fi
   - if [ "x$CONFIG" != "xnone" ] ; then make $MAKE_TARGET -j2 ; fi
 
+after_failure:
+  - if [ "x$ERROR_LOG" != "xnone" ] ; then cat $ERROR_LOG ; fi
+
 env:
   global:
     - TEST_NAME=""
@@ -56,15 +60,11 @@ env:
   matrix:
     # Put it here because it's most time consuming
     - TEST_NAME="make cross (automake)"
-      CONFIG="--without-python"
-      ALL_DEPS="yes"
-      MAKE_TARGET="cross"
-
-    - TEST_NAME="make cross-py (automake)"
       THRIFT_CROSSTEST_CONCURRENCY=6
       CONFIG="--enable-tutorial=no --without-erlang --without-lua --without-haxe --without-d"
       ALL_DEPS="yes"
-      MAKE_TARGET="cross2"
+      MAKE_TARGET="cross"
+      ERROR_LOG="test/log/unexpected_failures.log"
 
     # CMake builds
     - TEST_NAME="compiler (CMake + CPack)"

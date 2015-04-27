@@ -18,6 +18,7 @@
 #
 
 AC_PREREQ(2.65)
+AC_CONFIG_MACRO_DIR([./aclocal])
 
 AC_INIT([thrift], [1.0.0-dev])
 
@@ -98,7 +99,7 @@ AC_PROG_AWK
 AC_PROG_RANLIB
 
 AC_LANG([C++])
-AX_CXX_COMPILE_STDCXX_11([noext])
+AX_CXX_COMPILE_STDCXX_11([noext], [optional])
 
 AM_EXTRA_RECURSIVE_TARGETS([style])
 AC_SUBST(CPPSTYLE_CMD, 'find . -type f \( -iname "*.h" -or -iname "*.cpp" -or -iname "*.cc" -or -iname "*.tcc" \) -printf "Reformatting: %h/%f\n" -exec clang-format -i {} \;')
@@ -135,7 +136,10 @@ if test "$with_cpp" = "yes";  then
   AX_BOOST_BASE([1.53.0])
   if test "x$succeeded" = "xyes" ; then
     AC_SUBST([BOOST_LIB_DIR], [$(echo "$BOOST_LDFLAGS" | sed -e 's/^\-L//')])
+    AC_SUBST([BOOST_CHRONO_LDADD], [$(echo "$BOOST_LIB_DIR/libboost_chrono.a")])
+    AC_SUBST([BOOST_SYSTEM_LDADD], [$(echo "$BOOST_LIB_DIR/libboost_system.a")])
     AC_SUBST([BOOST_TEST_LDADD], [$(echo "$BOOST_LIB_DIR/libboost_unit_test_framework.a")])
+    AC_SUBST([BOOST_THREAD_LDADD], [$(echo "$BOOST_LIB_DIR/libboost_thread.a")])
     have_cpp="yes"
   fi
 
@@ -595,6 +599,7 @@ AC_CHECK_FUNCS([memset])
 AC_CHECK_FUNCS([mkdir])
 AC_CHECK_FUNCS([realpath])
 AC_CHECK_FUNCS([select])
+AC_CHECK_FUNCS([setlocale])
 AC_CHECK_FUNCS([socket])
 AC_CHECK_FUNCS([strchr])
 AC_CHECK_FUNCS([strdup])

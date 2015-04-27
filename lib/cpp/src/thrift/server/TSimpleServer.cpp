@@ -17,6 +17,7 @@
  * under the License.
  */
 
+#include <thrift/server/TConnectedClient.h>
 #include <thrift/server/TSimpleServer.h>
 #include <thrift/transport/TTransportException.h>
 #include <string>
@@ -70,11 +71,11 @@ void TSimpleServer::serve() {
       if (client) {
         client->close();
       }
-      if (!stop_ || ttx.getType() != TTransportException::INTERRUPTED) {
+      if (ttx.getType() != TTransportException::INTERRUPTED) {
         string errStr = string("TServerTransport died on accept: ") + ttx.what();
         GlobalOutput(errStr.c_str());
       }
-      continue;
+      if (stop_) break; else continue;
     } catch (TException& tx) {
       if (inputTransport) {
         inputTransport->close();
@@ -88,7 +89,7 @@ void TSimpleServer::serve() {
       string errStr = string("Some kind of accept exception: ") + tx.what();
       GlobalOutput(errStr.c_str());
       continue;
-    } catch (string s) {
+    } catch (const string& s) {
       if (inputTransport) {
         inputTransport->close();
       }
@@ -103,54 +104,9 @@ void TSimpleServer::serve() {
       break;
     }
 
-    // Get the processor
-    shared_ptr<TProcessor> processor = getProcessor(inputProtocol, outputProtocol, client);
-
-    void* connectionContext = NULL;
-    if (eventHandler_) {
-      connectionContext = eventHandler_->createContext(inputProtocol, outputProtocol);
-    }
-    try {
-      for (;;) {
-        if (eventHandler_) {
-          eventHandler_->processContext(connectionContext, client);
-        }
-        if (!processor->process(inputProtocol, outputProtocol, connectionContext) ||
-            // Peek ahead, is the remote side closed?
-            !inputProtocol->getTransport()->peek()) {
-          break;
-        }
-      }
-    } catch (const TTransportException& ttx) {
-      string errStr = string("TSimpleServer client died: ") + ttx.what();
-      GlobalOutput(errStr.c_str());
-    } catch (const std::exception& x) {
-      GlobalOutput.printf("TSimpleServer exception: %s: %s", typeid(x).name(), x.what());
-    } catch (...) {
-      GlobalOutput("TSimpleServer uncaught exception.");
-    }
-    if (eventHandler_) {
-      eventHandler_->deleteContext(connectionContext, inputProtocol, outputProtocol);
-    }
-
-    try {
-      inputTransport->close();
-    } catch (const TTransportException& ttx) {
-      string errStr = string("TSimpleServer input close failed: ") + ttx.what();
-      GlobalOutput(errStr.c_str());
-    }
-    try {
-      outputTransport->close();
-    } catch (const TTransportException& ttx) {
-      string errStr = string("TSimpleServer output close failed: ") + ttx.what();
-      GlobalOutput(errStr.c_str());
-    }
-    try {
-      client->close();
-    } catch (const TTransportException& ttx) {
-      string errStr = string("TSimpleServer client close failed: ") + ttx.what();
-      GlobalOutput(errStr.c_str());
-    }
+    TConnectedClient("TSimpleServer",
+            getProcessor(inputProtocol, outputProtocol, client),
+            inputProtocol, outputProtocol, eventHandler_, client).run();
   }
 
   if (stop_) {
@@ -163,6 +119,15 @@ void TSimpleServer::serve() {
     stop_ = false;
   }
 }
+
+void TSimpleServer::stop() {
+  if (!stop_) {
+    stop_ = true;
+    serverTransport_->interrupt();
+    serverTransport_->interruptChildren();
+  }
+}
+
 }
 }
 } // apache::thrift::server

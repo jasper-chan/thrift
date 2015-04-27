@@ -37,8 +37,6 @@ using apache::thrift::transport::TTransportFactory;
 
 class TThreadPoolServer : public TServer {
 public:
-  class Task;
-
   template <typename ProcessorFactory>
   TThreadPoolServer(const boost::shared_ptr<ProcessorFactory>& processorFactory,
                     const boost::shared_ptr<TServerTransport>& serverTransport,
@@ -107,16 +105,24 @@ public:
 
   virtual ~TThreadPoolServer();
 
+  /**
+   * Process all connections that arrive using a thread pool.
+   * Call stop() on another thread to interrupt processing and
+   * return control to the caller.
+   * Post-conditions (return guarantees):
+   *   The serverTransport will be closed.
+   *   There will be no connected clients.
+   */
   virtual void serve();
+
+  /**
+   * Interrupt serve() so that it meets post-conditions and returns.
+   */
+  virtual void stop();
 
   virtual int64_t getTimeout() const;
 
   virtual void setTimeout(int64_t value);
-
-  virtual void stop() {
-    stop_ = true;
-    serverTransport_->interrupt();
-  }
 
   virtual int64_t getTaskExpiration() const;
 

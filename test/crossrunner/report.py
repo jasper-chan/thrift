@@ -53,7 +53,7 @@ def generate_known_failures(testdir, overwrite, save, out):
     known = load_known_failures(testdir)
     known.extend(fails)
     fails = known
-  fails_json = json.dumps(sorted(set(fails)), indent=2)
+  fails_json = json.dumps(sorted(set(fails)), indent=2, separators=(',', ': '))
   if save:
     with open(os.path.join(testdir, FAIL_JSON % platform.system()), 'w+') as fp:
       fp.write(fails_json)
@@ -82,9 +82,9 @@ class TestReporter(object):
     self._lock = multiprocessing.Lock()
 
   @classmethod
-  def test_logfile(cls, dir, test_name, prog_kind):
-    return os.path.realpath(os.path.join(
-      dir, 'log', '%s_%s.log' % (test_name, prog_kind)))
+  def test_logfile(cls, test_name, prog_kind, dir=None):
+    relpath = os.path.join('log', '%s_%s.log' % (test_name, prog_kind))
+    return relpath if not dir else os.path.realpath(os.path.join(dir, relpath))
 
   def _start(self):
     self._start_time = time.time()
@@ -113,7 +113,7 @@ class ExecReporter(TestReporter):
     super(ExecReporter, self).__init__()
     self._test = test
     self._prog = prog
-    self.logpath = self.test_logfile(testdir, test.name, prog.kind)
+    self.logpath = self.test_logfile(test.name, prog.kind, testdir)
     self.out = None
 
   def begin(self):
@@ -284,6 +284,12 @@ class SummaryReporter(TestReporter):
         self.out.write(self._format_test(self._tests[i]))
       self._print_bar()
 
+  def _http_server_command(self, port):
+    if sys.version_info[0] < 3:
+      return 'python -m SimpleHTTPServer %d' % port
+    else:
+      return 'python -m http.server %d' % port
+
   def _print_footer(self):
     fail_count = len(self._expected_failure) + len(self._unexpected_failure)
     self._print_bar()
@@ -295,6 +301,10 @@ class SummaryReporter(TestReporter):
     self.out.writelines([
       'You can browse results at:\n',
       '\tfile://%s/%s\n' % (self.testdir, RESULT_HTML),
+      '# If you use Chrome, run:\n',
+      '# \tcd %s\n#\t%s\n' % (self.testdir, self._http_server_command(8001)),
+      '# then browse:\n',
+      '# \thttp://localhost:%d/%s\n' % (8001, RESULT_HTML),
       'Full log for each test is here:\n',
       '\ttest/log/client_server_protocol_transport_client.log\n',
       '\ttest/log/client_server_protocol_transport_server.log\n',
@@ -314,8 +324,8 @@ class SummaryReporter(TestReporter):
       test.as_expected,
       test.returncode,
       {
-        'server': self.test_logfile(test.testdir, test.name, test.server.kind),
-        'client': self.test_logfile(test.testdir, test.name, test.client.kind),
+        'server': self.test_logfile(test.name, test.server.kind),
+        'client': self.test_logfile(test.name, test.client.kind),
       },
     ]
 
@@ -336,7 +346,7 @@ class SummaryReporter(TestReporter):
       def add_prog_log(fp, test, prog_kind):
         fp.write('*************************** %s message ***************************\n'
                  % prog_kind)
-        path = self.test_logfile(self.testdir, test.name, prog_kind)
+        path = self.test_logfile(test.name, prog_kind, self.testdir)
         kwargs = {} if sys.version_info[0] < 3 else {'errors': 'replace'}
         with open(path, 'r', **kwargs) as prog_fp:
           fp.write(prog_fp.read())
