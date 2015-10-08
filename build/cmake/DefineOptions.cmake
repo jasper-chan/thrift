@@ -24,6 +24,7 @@ include(CMakeDependentOption)
 option(BUILD_COMPILER "Build Thrift compiler" ON)
 option(BUILD_TESTING "Build with unit tests" ON)
 option(BUILD_EXAMPLES "Build examples" ON)
+option(BUILD_TUTORIALS "Build Thrift tutorials" ON)
 option(BUILD_LIBRARIES "Build Thrift libraries" ON)
 
 # Libraries to build
@@ -61,8 +62,10 @@ endif()
 find_package(OpenSSL QUIET)
 CMAKE_DEPENDENT_OPTION(WITH_OPENSSL "Build with OpenSSL support" ON
                        "OPENSSL_FOUND" OFF)
-option(WITH_BOOSTTHREADS "Build with Boost thread support" OFF)
 option(WITH_STDTHREADS "Build with C++ std::thread support" OFF)
+CMAKE_DEPENDENT_OPTION(WITH_BOOSTTHREADS "Build with Boost threads support" OFF
+    "NOT WITH_STDTHREADS;Boost_FOUND" OFF)
+
 
 # C GLib
 option(WITH_C_GLIB "Build C (GLib) Thrift library" ON)
@@ -86,12 +89,15 @@ CMAKE_DEPENDENT_OPTION(BUILD_PYTHON "Build Python library" ON
 # Common library options
 option(WITH_SHARED_LIB "Build shared libraries" ON)
 option(WITH_STATIC_LIB "Build static libraries" ON)
+if (NOT WITH_SHARED_LIB AND NOT WITH_STATIC_LIB)
+    message(FATAL_ERROR "Cannot build with both shared and static outputs disabled!")
+endif()
 
 #NOTE: C++ compiler options are defined in the lib/cpp/CMakeLists.txt
 
 # Visual Studio only options
 if(MSVC)
-option(WITH_MT "Build unsing MT instead of MT (MSVC only)" OFF)
+option(WITH_MT "Build using MT instead of MD (MSVC only)" OFF)
 endif(MSVC)
 
 macro(MESSAGE_DEP flag summary)

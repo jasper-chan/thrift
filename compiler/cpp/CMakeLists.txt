@@ -19,10 +19,8 @@
 
 # Windows has a different header
 if(MSVC)
-    set(FLEX_FLAGS "--wincompat") # Don't use unistd.h on windows
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/windows/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/version.h)
 else()
-    set(FLEX_FLAGS " ")
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/version.h)
 endif()
 
@@ -31,7 +29,7 @@ find_package(BISON REQUIRED)
 
 # Create flex and bison files and build the lib parse static library
 BISON_TARGET(thrifty ${CMAKE_CURRENT_SOURCE_DIR}/src/thrifty.yy ${CMAKE_CURRENT_BINARY_DIR}/thrifty.cc)
-FLEX_TARGET(thriftl ${CMAKE_CURRENT_SOURCE_DIR}/src/thriftl.ll ${CMAKE_CURRENT_BINARY_DIR}/thriftl.cc COMPILE_FLAGS ${FLEX_FLAGS})
+FLEX_TARGET(thriftl ${CMAKE_CURRENT_SOURCE_DIR}/src/thriftl.ll ${CMAKE_CURRENT_BINARY_DIR}/thriftl.cc)
 ADD_FLEX_BISON_DEPENDENCY(thriftl thrifty)
 
 # HACK: Work around the fact that bison crates a .hh file but we need a .h file
@@ -49,7 +47,7 @@ set(libparse_SOURCES
 add_library(libparse STATIC ${libparse_SOURCES})
 
 # Create the thrift compiler
-set( thrift_SOURCES 
+set( thrift_SOURCES
     src/main.cc
     src/md5.c
     src/generate/t_generator.cc
@@ -58,6 +56,7 @@ set( thrift_SOURCES
     src/main.h
     src/platform.h
     src/md5.h
+    src/audit/t_audit.cpp
     src/parse/t_doc.h
     src/parse/t_type.h
     src/parse/t_base_type.h
@@ -101,6 +100,7 @@ THRIFT_ADD_COMPILER(c_glib  "Enable compiler for C with Glib" ON)
 THRIFT_ADD_COMPILER(cpp     "Enable compiler for C++" ON)
 THRIFT_ADD_COMPILER(java    "Enable compiler for Java"   ON)
 THRIFT_ADD_COMPILER(as3     "Enable compiler for ActionScript 3" ON)
+THRIFT_ADD_COMPILER(dart    "Enable compiler for Dart" ON)
 THRIFT_ADD_COMPILER(haxe    "Enable compiler for Haxe" ON)
 THRIFT_ADD_COMPILER(csharp  "Enable compiler for C#" ON)
 THRIFT_ADD_COMPILER(py      "Enable compiler for Python 2.0" ON)

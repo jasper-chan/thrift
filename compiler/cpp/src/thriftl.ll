@@ -43,6 +43,8 @@
 #pragma warning(disable:4102)
 //avoid isatty redefinition
 #define YY_NEVER_INTERACTIVE 1
+
+#define YY_NO_UNISTD_H 1
 #endif
 
 #include <cassert>
@@ -237,6 +239,7 @@ literal_begin (['\"])
 "float"              { thrift_reserved_keyword(yytext); }
 "for"                { thrift_reserved_keyword(yytext); }
 "foreach"            { thrift_reserved_keyword(yytext); }
+"from"               { thrift_reserved_keyword(yytext); }
 "function"           { thrift_reserved_keyword(yytext); }
 "global"             { thrift_reserved_keyword(yytext); }
 "goto"               { thrift_reserved_keyword(yytext); }
@@ -256,6 +259,7 @@ literal_begin (['\"])
 "nil"                { thrift_reserved_keyword(yytext); }
 "not"                { thrift_reserved_keyword(yytext); }
 "or"                 { thrift_reserved_keyword(yytext); }
+"package"            { thrift_reserved_keyword(yytext); }
 "pass"               { thrift_reserved_keyword(yytext); }
 "public"             { thrift_reserved_keyword(yytext); }
 "print"              { thrift_reserved_keyword(yytext); }
